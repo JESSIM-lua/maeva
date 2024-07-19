@@ -1,37 +1,27 @@
 <?php
 session_start();
-require 'config/config.php';
+require '../config/config.php';
 
 if (isset($_SESSION['username'])) {
-    header("Location: home/home.php");
+    header("Location: home.php");
     exit();
 }
 
 $error = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST['login'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
+    $username = $_POST['username'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $stmt->store_result();
-        if ($stmt->num_rows > 0) {
-            $stmt->bind_result($id, $hashed_password);
-            $stmt->fetch();
-            if (password_verify($password, $hashed_password)) {
-                $_SESSION['username'] = $username;
-                header("Location: home/home.php");
-                exit();
-            } else {
-                $error = 'Mot de passe incorrect.';
-            }
-        } else {
-            $error = 'Nom d\'utilisateur incorrect.';
-        }
-        $stmt->close();
+    $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+    $stmt->bind_param("ss", $username, $password);
+    if ($stmt->execute()) {
+        $_SESSION['username'] = $username;
+        header("Location: home.php");
+        exit();
+    } else {
+        $error = 'Erreur lors de l\'inscription.';
     }
+    $stmt->close();
 }
 ?>
 
@@ -40,8 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion</title>
-    <link rel="stylesheet" type="text/css" href="css/../css/styles.css">
+    <title>Inscription</title>
+    <link rel="stylesheet" type="text/css" href="../css/styles.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -123,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <div class="container">
-        <h2>Connexion</h2>
+        <h2>Inscription</h2>
         <?php if ($error) echo "<p class='error'>$error</p>"; ?>
         <form method="POST" action="">
             <div class="form-group">
@@ -135,11 +125,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="password" id="password" name="password" required>
             </div>
             <div class="form-group">
-                <button type="submit" name="login">Connexion</button>
+                <button type="submit" name="signup">S'inscrire</button>
             </div>
         </form>
         <div class="toggle-link">
-            <p>Pas encore de compte ? <a href="login/signup.php">Inscrivez-vous</a></p>
+            <p>Déjà un compte ? <a href="../index.php">Connectez-vous</a></p>
         </div>
     </div>
 </body>

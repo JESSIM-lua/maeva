@@ -1,9 +1,9 @@
 <?php
 session_start();
-require 'config.php';
+require '../config/config.php';
 
 if (!isset($_SESSION['username'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -14,6 +14,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['name'])) {
     $name = sanitize_input($_POST['name']);
     $stmt = $conn->prepare("INSERT INTO baby_names (name, username) VALUES (?, ?)");
     $stmt->bind_param("ss", $name, $current_username);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Gestion de la suppression des prénoms
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_name'])) {
+    $name_id = intval($_POST['name_id']);
+    $stmt = $conn->prepare("DELETE FROM baby_names WHERE id = ? AND username = ?");
+    $stmt->bind_param("is", $name_id, $current_username);
     $stmt->execute();
     $stmt->close();
 }
@@ -38,7 +47,7 @@ if ($friends_result->num_rows > 0) {
 
 // Préparer la requête SQL pour récupérer les prénoms
 $friends_in = implode("','", array_map([$conn, 'real_escape_string'], $friends));
-$names_sql = "SELECT name, username FROM baby_names WHERE username=? OR username IN ('$friends_in')";
+$names_sql = "SELECT id, name, username FROM baby_names WHERE username=? OR username IN ('$friends_in')";
 $stmt = $conn->prepare($names_sql);
 $stmt->bind_param("s", $current_username);
 $stmt->execute();
@@ -48,7 +57,7 @@ $result = $stmt->get_result();
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
     <title>Prénoms Soumis</title>
 </head>
 <body>
@@ -62,18 +71,30 @@ $result = $stmt->get_result();
         <tr>
             <th>Prénom</th>
             <th>Nom d'utilisateur</th>
+            <th>Action</th>
         </tr>
         <?php
         if ($result->num_rows > 0) {
             while($row = $result->fetch_assoc()) {
-                echo "<tr><td>" . htmlspecialchars($row["name"]). "</td><td>" . htmlspecialchars($row["username"]). "</td></tr>";
+                echo "<tr><td>" . htmlspecialchars($row["name"]). "</td><td>" . htmlspecialchars($row["username"]). "</td>";
+                if ($row["username"] == $current_username) {
+                    echo "<td>
+                            <form method='POST' action='' style='display:inline;'>
+                                <input type='hidden' name='name_id' value='" . $row["id"] . "'>
+                                <button type='submit' name='delete_name'>Supprimer</button>
+                            </form>
+                          </td>";
+                } else {
+                    echo "<td></td>";
+                }
+                echo "</tr>";
             }
         } else {
-            echo "<tr><td colspan='2'>Aucun prénom trouvé</td></tr>";
+            echo "<tr><td colspan='3'>Aucun prénom trouvé</td></tr>";
         }
         ?>
     </table>
-    <p><a href="index.php">Retour à l'accueil</a></p>
-    <p><a href="friend_requests.php">Gérer les amis</a></p>
+    <p><a href="../index.php">Retour à l'accueil</a></p>
+    <p><a href="../friends/friend_requests.php">Gérer les amis</a></p>
 </body>
 </html>
