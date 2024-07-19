@@ -20,7 +20,7 @@ function processImage($source, $destination, $quality) {
 
 // Gestion du téléchargement des images
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-    $target_dir = "uploads/";
+    $target_dir = "../uploads/";
     if (!is_dir($target_dir)) {
         mkdir($target_dir, 0755, true);
     }
